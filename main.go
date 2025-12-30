@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -28,20 +29,7 @@ func (rt *AuthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 	return rt.Base.RoundTrip(req)
 }
 
-func QueryInstant(ctx context.Context, endpoint, promql string) ([]Point, error) {
-	client, err := api.NewClient(api.Config{
-		Address: endpoint,
-		RoundTripper: &AuthRoundTripper{
-			APIKey: os.Getenv("THANOS_API_KEY"),
-			Base:   http.DefaultTransport,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	apiV1 := v1.NewAPI(client)
-
+func QueryInstant(ctx context.Context, apiV1 v1.API, promql string) ([]Point, error) {
 	r := v1.Range{
 		Start: time.Now().Add(-5 * time.Minute),
 		End:   time.Now(),
@@ -52,6 +40,9 @@ func QueryInstant(ctx context.Context, endpoint, promql string) ([]Point, error)
 		`rate(prometheus_http_requests_total[1m])`,
 		r,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	matrix := result.(model.Matrix)
 
@@ -72,11 +63,18 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	res, err := QueryInstant(
-		ctx,
-		"http://localhost:9090",
-		`rate(prometheus_http_requests_total[1m])`,
-	)
+	client, err := api.NewClient(api.Config{
+		Address: "http://localhost:9090",
+		RoundTripper: &AuthRoundTripper{
+			APIKey: os.Getenv("THANOS_API_KEY"),
+			Base:   http.DefaultTransport,
+		},
+	})
+	if err != nil {
+		log.Fatalln("create prometheus client failed")
+	}
+
+	res, err := QueryInstant(ctx, v1.NewAPI(client), `rate(prometheus_http_requests_total[1m])`)
 	if err != nil {
 		panic(err)
 	}
