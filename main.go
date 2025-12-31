@@ -36,10 +36,7 @@ func QueryInstant(ctx context.Context, apiV1 v1.API, promql string) ([]Point, er
 		Step:  time.Minute,
 	}
 
-	result, _, err := apiV1.QueryRange(ctx,
-		`rate(prometheus_http_requests_total[1m])`,
-		r,
-	)
+	result, _, err := apiV1.QueryRange(ctx, promql, r)
 	if err != nil {
 		return nil, err
 	}
