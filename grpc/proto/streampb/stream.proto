@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "play-ground/grpc/gen/proto/streampb;streampb";
+
+service ProvisionService {
+  rpc WatchProvision(
+    ProvisionRequest
+  ) returns (stream ProvisionEvent);
+}
+
+message ProvisionRequest {
+  string workspace_id = 1;
+}
+
+message ProvisionEvent {
+  string step = 1;
+  string status = 2;
+}

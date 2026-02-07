@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package user;
 
-option go_package = "example.com/userpb";
+option go_package = "play-ground/grpc/gen/proto/userpb;userpb";
 
 service UserService {
   rpc GetUser (GetUserRequest) returns (GetUserResponse);
